@@ -1,0 +1,14 @@
+Dedicated to the heritage of Delphi :)
+Fields with types
+
+$0D     "B"  Binary Large Object                     
+$0E     "F"  Formatted Memo BLOb                     
+$0F     "O"  OLE                                     
+$10     "G"  Graphic BLOb                            
+$17     "#"  BCD                                     
+$18     "Y"  Bytes
+
+are not supported.
+
+If You have files with any of this types, please send me them.
+I will try to read it.
