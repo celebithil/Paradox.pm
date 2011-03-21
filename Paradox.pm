@@ -6,6 +6,7 @@
 #
 # Created for JSC Rostovtelecom specially
 # Licensed by GPL
+# Copyright (C) 2009-2011 Daniil Popov (popov.daniil@gmail.com)
 # $Id: Paradox.pm v1.0.21 $
 #
 # 1.0.0 - first release
