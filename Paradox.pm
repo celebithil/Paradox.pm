@@ -129,24 +129,17 @@ sub read_MEMO_from_MB {
     open( MB, $mb ) or die "Can't open file $mb \n";
     binmode(MB);
     my $entry_offset = 12 + $mb_offset + ( 5 * $mb_index );
-
     seek( MB, $entry_offset, 0 );
     read( MB, my $memo_entry, 5 );
-    my $data_offset_in_block = unpack( "C", substr( $memo_entry, 0x0, 1 ) );
-
-    my $data_lenght_in_block = unpack( "C", substr( $memo_entry, 0x1, 1 ) );
-
-    my $modification_number = unpack( "S", substr( $memo_entry, 0x2, 2 ) );
-
+    my $data_offset_in_block  = unpack( "C", substr( $memo_entry, 0x0, 1 ) );
+    my $data_lenght_in_block  = unpack( "C", substr( $memo_entry, 0x1, 1 ) );
+    my $modification_number   = unpack( "S", substr( $memo_entry, 0x2, 2 ) );
     my $data_lenght_modulo_16 = unpack( "C", substr( $memo_entry, 0x4, 1 ) );
-
     seek( MB, $mb_offset + $data_offset_in_block * 16, 0 );
     read( MB,
         my $memo_field,
         --$data_lenght_in_block * 16 + $data_lenght_modulo_16
     );
-
-    #print "$memo_field \n";
     close(MB);
     return $memo_field;
 }
@@ -553,22 +546,9 @@ sub PX_read_header {
                 $string .= $char;
             }
         } while ( ord($char) );
-        if ( 0xc0 == $self->{sort_order} && 866 == $self->{code_page} ) {
 
-            #push (@{$self->{field_name}},alt2koi($string));
-            push( @{ $self->{field_name} }, decode( 'cp866', $string ) );
-        }
-        elsif ( 0x4c == $self->{sort_order}
-            && ( 1252 == $self->{code_page} || 1251 == $self->{code_page} ) )
-        {
+        push( @{ $self->{field_name} }, $string );
 
-            #push (@{$self->{field_name}},win2koi($string));
-            push( @{ $self->{field_name} }, $string );
-
-        }
-        else {
-            push( @{ $self->{field_name} }, $string );
-        }
     }
 }
 
@@ -706,18 +686,8 @@ sub PX_read_record {
 
             # Field A
             $a = unpack( 'Z' . ${ $self->{field_length} }[$i], $dummy );
-            if ( 0xc0 == $self->{sort_order} && 866 == $self->{code_page} ) {
-                push( @result, encode( 'cp1251', decode( 'cp866', ($a) ) ) );
-            }
-            elsif ( 0x4c == $self->{sort_order}
-                && ( 1252 == $self->{code_page} || 1251 == $self->{code_page} )
-              )
-            {
-                push( @result, $a );    #?
-            }
-            else {
-                push( @result, $a );
-            }
+            push( @result, $a );
+
         }
         elsif ( ${ $self->{field_type} }[$i] == 2 ) {
 
@@ -822,13 +792,6 @@ sub PX_read_record {
             }
             else {
                 push( @result, substr( $dummy, 0, &memo_length($dummy) ) );
-
-            }
-
-            if ( 0xc0 == $self->{sort_order} && 866 == $self->{code_page} ) {
-                push( @result,
-                    encode( 'cp1251', decode( 'cp866', pop(@result) ) ) );
-
             }
 
         }
