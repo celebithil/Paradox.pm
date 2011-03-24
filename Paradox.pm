@@ -44,6 +44,7 @@
 # - 'alt2koi' and 'win1251' deleted
 # 1.0.20 - 'memo' type processing added
 # 1.0.21 - some cosmetical fixes
+# - move to github
 package Paradox;
 
 # Object variables
@@ -78,9 +79,8 @@ package Paradox;
 require 5.004;
 use Fcntl qw (:flock);
 use IO::File;
-use Encode;
 use strict;
-our $file_name;
+use warnings;
 
 #determinating length of M field
 sub memo_length {
@@ -583,7 +583,7 @@ sub new {
     my $class = shift;
     my $new = bless {}, $class;
     $new->{handle} = IO::File->new();
-    $file_name = $_[0];
+    $new->{file_name} = $_[0];# name of file (for reading MB files)
     return $new->open(@_);
 
 }
@@ -788,7 +788,7 @@ sub PX_read_record {
 
             # Field M
             if ( &mb_offset($dummy) ) {
-                push( @result, &read_MEMO_from_MB( $file_name, $dummy ) );
+                push( @result, &read_MEMO_from_MB( $self->{file_name}, $dummy ) );
             }
             else {
                 push( @result, substr( $dummy, 0, &memo_length($dummy) ) );
