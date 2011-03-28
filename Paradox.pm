@@ -82,41 +82,17 @@ use IO::File;
 use strict;
 use warnings;
 
-#determinating length of M field
-sub memo_length {
-    my ($string) = @_;
-    $string = unpack( 'L', substr( $string, -6, 4 ) );
-    return $string;
-}
-
-#determinating offset of Blob Block
-sub mb_offset {
-    my $string = shift;
-    $string = unpack( 'L', substr( $string, -10, 4 ) );
-    return $string & 0xFFFFFF00;
-}
-
-#determinating index of Blob record
-sub mb_index {
-    my $string = shift;
-    $string = unpack( 'C', substr( $string, -10, 1 ) );
-    return $string;
-}
-
-#determinating mod number of Blob record
-sub mod_number {
-    my $string = shift;
-    $string = unpack( 'S', substr( $string, -2, 2 ) );
-    return $string;
-}
-
 #open read M record from MB
 sub read_MEMO_from_MB {
-    my $f_table   = shift;
-    my $memo      = shift;
-    my $mb_offset = &mb_offset($memo);
-    my $mb_index  = &mb_index($memo);
-    my @files_mb  = glob("*.[Mm][Bb]");
+    my $f_table = shift;
+    my $memo    = shift;
+
+    #determinating offset of Blob Block
+    my $mb_offset = unpack( 'L', substr( $memo, -10, 4 ) ) & 0xFFFFFF00;
+
+    #determinating index of Blob record
+    my $mb_index = unpack( 'C', substr( $memo, -10, 1 ) );
+    my @files_mb = glob("*.[Mm][Bb]");
     my $mb;
 
     foreach my $f_memo (@files_mb) {
@@ -131,9 +107,10 @@ sub read_MEMO_from_MB {
     my $entry_offset = 12 + $mb_offset + ( 5 * $mb_index );
     seek( MB, $entry_offset, 0 );
     read( MB, my $memo_entry, 5 );
-    my $data_offset_in_block  = unpack( "C", substr( $memo_entry, 0x0, 1 ) );
-    my $data_lenght_in_block  = unpack( "C", substr( $memo_entry, 0x1, 1 ) );
-    my $modification_number   = unpack( "S", substr( $memo_entry, 0x2, 2 ) );
+    my $data_offset_in_block = unpack( "C", substr( $memo_entry, 0x0, 1 ) );
+    my $data_lenght_in_block = unpack( "C", substr( $memo_entry, 0x1, 1 ) );
+
+#my $modification_number   = unpack( "S", substr( $memo_entry, 0x2, 2 ) ); don't need fo reading
     my $data_lenght_modulo_16 = unpack( "C", substr( $memo_entry, 0x4, 1 ) );
     seek( MB, $mb_offset + $data_offset_in_block * 16, 0 );
     read( MB,
@@ -582,8 +559,8 @@ sub PX_read_data_block {
 sub new {
     my $class = shift;
     my $new = bless {}, $class;
-    $new->{handle} = IO::File->new();
-    $new->{file_name} = $_[0];# name of file (for reading MB files)
+    $new->{handle}    = IO::File->new();
+    $new->{file_name} = $_[0];             # name of file (for reading MB files)
     return $new->open(@_);
 
 }
@@ -787,11 +764,14 @@ sub PX_read_record {
         elsif ( ${ $self->{field_type} }[$i] == 0xC ) {
 
             # Field M
-            if ( &mb_offset($dummy) ) {
-                push( @result, &read_MEMO_from_MB( $self->{file_name}, $dummy ) );
+            if ( unpack( 'L', substr( $dummy, -10, 4 ) ) & 0xFFFFFF00 ) {
+                push( @result,
+                    &read_MEMO_from_MB( $self->{file_name}, $dummy ) );
             }
             else {
-                push( @result, substr( $dummy, 0, &memo_length($dummy) ) );
+                push( @result,
+                    substr( $dummy, 0, unpack( 'L', substr( $dummy, -6, 4 ) ) )
+                );
             }
 
         }
