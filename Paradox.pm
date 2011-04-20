@@ -106,7 +106,7 @@ sub read_MEMO_from_MB {
     binmode(MB);
     my $entry_offset = 12 + $mb_offset + ( 5 * $mb_index );
     seek( MB, $entry_offset, 0 );
-    read( MB, my $memo_entry, 5 );
+    read( MB, my $memo_entry, 5 ) || die "Cannot read memo_entry in read_MEMO_from_MB: $!\n";
     my $data_offset_in_block = unpack( "C", substr( $memo_entry, 0x0, 1 ) );
     my $data_lenght_in_block = unpack( "C", substr( $memo_entry, 0x1, 1 ) );
 
@@ -116,7 +116,7 @@ sub read_MEMO_from_MB {
     read( MB,
         my $memo_field,
         --$data_lenght_in_block * 16 + $data_lenght_modulo_16
-    );
+    ) || die "Cannot read memo_field in read_MEMO_from_MB: $!\n";;
     close(MB);
     return $memo_field;
 }
