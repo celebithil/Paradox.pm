@@ -108,7 +108,7 @@ sub read_MEMO_from_MB {
     my $data_offset_in_block = unpack( "C", substr( $memo_entry, 0x0, 1 ) );
     my $data_lenght_in_block = unpack( "C", substr( $memo_entry, 0x1, 1 ) );
 
-#my $modification_number   = unpack( "S", substr( $memo_entry, 0x2, 2 ) ); don't need fo reading
+#my $modification_number   = unpack( "S", substr( $memo_entry, 0x2, 2 ) ); don't need for reading
     my $data_lenght_modulo_16 = unpack( "C", substr( $memo_entry, 0x4, 1 ) );
     sysseek( MB, $mb_offset + $data_offset_in_block * 16, 0 ) || die "Cannot seek memo_entry in read_MEMO_from_MB: $!\n";
     sysread( MB,
@@ -772,6 +772,32 @@ sub PX_read_record {
             }
 
         }
+		
+		elsif ( ${ $self->{field_type} }[$i] == 0x10 ) {
+
+            # Field G
+            print "${ $self->{field_length} }[$i]\n";
+			print unpack( 'L', substr( $dummy, -10, 4 ) ) & 0xFFFFFF00; print "\n";
+			print unpack( 'L', substr( $dummy, -10, 0 ) ) & 0xFFFFFF00; print "\n";
+			
+			push( @result, $dummy);
+			
+			#if ( unpack( 'L', substr( $dummy, -10, 4 ) ) & 0xFFFFFF00 ) {
+            #    push( @result,
+            #        &read_MEMO_from_MB( $self->{file_name}, $dummy ) );
+            #}
+            #else {
+            #    push( @result,
+            #        substr( $dummy, 0, unpack( 'L', substr( $dummy, -6, 4 ) ) )
+            #    );
+            #}
+
+        }
+		
+		
+		
+		
+		
 
         else {
             push( @result, "-*%& UNSUPPORTED &%*-" );
