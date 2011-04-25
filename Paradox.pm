@@ -84,16 +84,14 @@ use warnings;
 
 #open read M record from MB
 sub read_MEMO_from_MB {
-    my $f_table = shift;
-    my $memo    = shift;
-
+    my ($f_table, $memo) = @_;
+	my ($mb, $memo_entry);
     #determinating offset of Blob Block
     my $mb_offset = unpack( 'L', substr( $memo, -10, 4 ) ) & 0xFFFFFF00;
 
     #determinating index of Blob record
     my $mb_index = unpack( 'C', substr( $memo, -10, 1 ) );
     my @files_mb = glob("*.[Mm][Bb]");
-    my $mb;
 
     foreach my $f_memo (@files_mb) {
         if ( substr( $f_table, 0, -3 ) eq substr( $f_memo, 0, -3 ) ) {
@@ -102,18 +100,18 @@ sub read_MEMO_from_MB {
         }
     }
 
-    open( MB, $mb ) or die "Can't open file $mb \n";
-    binmode(MB);
+    sysopen( MB, $mb, O_RDONLY ) || die "Can't open file $mb $!\n";
+    #binmode(MB);
     my $entry_offset = 12 + $mb_offset + ( 5 * $mb_index );
-    seek( MB, $entry_offset, 0 );
-    read( MB, my $memo_entry, 5 ) || die "Cannot read memo_entry in read_MEMO_from_MB: $!\n";
+    sysseek( MB, $entry_offset, 0 ) || die "Cannot seek memo_entry in read_MEMO_from_MB: $!\n";
+    sysread( MB, $memo_entry, 5 ) || die "Cannot read memo_entry in read_MEMO_from_MB: $!\n";
     my $data_offset_in_block = unpack( "C", substr( $memo_entry, 0x0, 1 ) );
     my $data_lenght_in_block = unpack( "C", substr( $memo_entry, 0x1, 1 ) );
 
 #my $modification_number   = unpack( "S", substr( $memo_entry, 0x2, 2 ) ); don't need fo reading
     my $data_lenght_modulo_16 = unpack( "C", substr( $memo_entry, 0x4, 1 ) );
-    seek( MB, $mb_offset + $data_offset_in_block * 16, 0 );
-    read( MB,
+    sysseek( MB, $mb_offset + $data_offset_in_block * 16, 0 ) || die "Cannot seek memo_entry in read_MEMO_from_MB: $!\n";
+    sysread( MB,
         my $memo_field,
         --$data_lenght_in_block * 16 + $data_lenght_modulo_16
     ) || die "Cannot read memo_field in read_MEMO_from_MB: $!\n";;
@@ -624,8 +622,7 @@ sub reopen {
 
 sub PX_read_record {
     my $self = shift;
-    my (@result);
-    my ( $a, $i, $dummy );
+    my ( @result, $a, $i, $dummy );
 
     die "instance method called on class" unless ref $self;
     if ( $self->{current_record_offset} < $self->{last_record_offset} ) {
