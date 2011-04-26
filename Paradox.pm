@@ -85,14 +85,11 @@ use warnings;
 #open read M record from MB
 sub read_MEMO_from_MB {
     my ($f_table, $memo) = @_;
-	my ($mb, $memo_entry);
+	my ($mb, $memo_field);
     #determinating offset of Blob Block
     my $mb_offset = unpack( 'L', substr( $memo, -10, 4 ) ) & 0xFFFFFF00;
-
-    #determinating index of Blob record
-    my $mb_index = unpack( 'C', substr( $memo, -10, 1 ) );
-    my @files_mb = glob("*.[Mm][Bb]");
-
+	#print "$mb_offset \n";
+	my @files_mb = glob("*.[Mm][Bb]");
     foreach my $f_memo (@files_mb) {
         if ( substr( $f_table, 0, -3 ) eq substr( $f_memo, 0, -3 ) ) {
             $mb = $f_memo;
@@ -100,23 +97,38 @@ sub read_MEMO_from_MB {
         }
     }
 
-    sysopen( MB, $mb, O_RDONLY ) || die "Can't open file $mb $!\n";
-    #binmode(MB);
-    my $entry_offset = 12 + $mb_offset + ( 5 * $mb_index );
-    sysseek( MB, $entry_offset, 0 ) || die "Cannot seek memo_entry in read_MEMO_from_MB: $!\n";
-    sysread( MB, $memo_entry, 5 ) || die "Cannot read memo_entry in read_MEMO_from_MB: $!\n";
-    my $data_offset_in_block = unpack( "C", substr( $memo_entry, 0x0, 1 ) );
-    my $data_lenght_in_block = unpack( "C", substr( $memo_entry, 0x1, 1 ) );
-
-#my $modification_number   = unpack( "S", substr( $memo_entry, 0x2, 2 ) ); don't need for reading
-    my $data_lenght_modulo_16 = unpack( "C", substr( $memo_entry, 0x4, 1 ) );
-    sysseek( MB, $mb_offset + $data_offset_in_block * 16, 0 ) || die "Cannot seek memo_entry in read_MEMO_from_MB: $!\n";
-    sysread( MB,
-        my $memo_field,
-        --$data_lenght_in_block * 16 + $data_lenght_modulo_16
-    ) || die "Cannot read memo_field in read_MEMO_from_MB: $!\n";;
-    close(MB);
-    return $memo_field;
+    sysopen( MB, $mb, O_RDONLY | O_BINARY ) || die "Can't open file $mb $!\n";
+	sysseek( MB, $mb_offset, 0) || die "Cannot seek record_type in read_MEMO_from_MB: $!\n";
+	sysread( MB, my $record_type, 1 ) || die "Cannot read record_type in read_MEMO_from_MB: $!\n";
+	$record_type = unpack ( 'C', $record_type);
+	
+	if ($record_type == 3){
+		#determinating index of Blob record
+		my $mb_index = unpack( 'C', substr( $memo, -10, 1 ) );
+		my $entry_offset = 12 + $mb_offset + ( 5 * $mb_index );
+		sysseek( MB, $entry_offset, 0 ) || die "Cannot seek memo_entry in read_MEMO_from_MB: $!\n";
+		sysread( MB, my $memo_entry, 5 ) || die "Cannot read memo_entry in read_MEMO_from_MB: $!\n";
+		my $data_offset_in_block = unpack( "C", substr( $memo_entry, 0x0, 1 ) );
+		my $data_lenght_in_block = unpack( "C", substr( $memo_entry, 0x1, 1 ) );
+		#my $modification_number   = unpack( "S", substr( $memo_entry, 0x2, 2 ) ); don't need for reading
+		my $data_lenght_modulo_16 = unpack( "C", substr( $memo_entry, 0x4, 1 ) );
+		sysseek( MB, $mb_offset + $data_offset_in_block * 16, 0 ) || die "Cannot seek memo_entry in read_MEMO_from_MB: $!\n";
+		sysread( MB,
+			$memo_field,
+			--$data_lenght_in_block * 16 + $data_lenght_modulo_16
+			) || die "Cannot read memo_field in read_MEMO_from_MB: $!\n";;
+	}   
+	
+	elsif ($record_type == 2){
+		sysseek( MB, 2, 1) || die "Cannot seek length_of_blob in read_MEMO_from_MB: $!\n";
+		sysread( MB, my $length_of_blob, 4) || die "Cannot read length_of_blob in read_MEMO_from_MB: $!\n";;
+		$length_of_blob = unpack( 'L', $length_of_blob ) & 0xFFFFFF00;
+		#print "$length_of_blob \n";
+		sysseek( MB, 2, 1) || die "Cannot seek memo_field in read_MEMO_from_MB: $!\n";
+		sysread( MB, $memo_field, $length_of_blob) || die "Cannot read memo_field in read_MEMO_from_MB: $!\n";
+	}
+		close(MB);
+		return $memo_field;
 }
 
 # $header_length have to be read at this moment !
@@ -572,7 +584,7 @@ sub open {
     if ( !defined( $_[0] ) ) {
         return undef;
     }
-    if ( not sysopen( $self->{handle}, $_[0], O_RDONLY ) ) {
+    if ( not sysopen( $self->{handle}, $_[0], O_RDONLY | O_BINARY) ) {
         warn "Cannot open file \'", $_[0], "\': $!\n";
         return undef;
     }
@@ -776,21 +788,16 @@ sub PX_read_record {
 		elsif ( ${ $self->{field_type} }[$i] == 0x10 ) {
 
             # Field G
-            print "${ $self->{field_length} }[$i]\n";
-			print unpack( 'L', substr( $dummy, -10, 4 ) ) & 0xFFFFFF00; print "\n";
-			print unpack( 'L', substr( $dummy, -10, 0 ) ) & 0xFFFFFF00; print "\n";
+			if ( unpack( 'L', substr( $dummy, -10, 4 ) ) & 0xFFFFFF00 ) {
+                push( @result,
+                    &read_MEMO_from_MB( $self->{file_name}, $dummy ) );
+            }
+            else {
+                push( @result,
+                    substr( $dummy, 0, unpack( 'L', substr( $dummy, -6, 4 ) ) )
+                );
+            }
 			
-			push( @result, $dummy);
-			
-			#if ( unpack( 'L', substr( $dummy, -10, 4 ) ) & 0xFFFFFF00 ) {
-            #    push( @result,
-            #        &read_MEMO_from_MB( $self->{file_name}, $dummy ) );
-            #}
-            #else {
-            #    push( @result,
-            #        substr( $dummy, 0, unpack( 'L', substr( $dummy, -6, 4 ) ) )
-            #    );
-            #}
 
         }
 		
