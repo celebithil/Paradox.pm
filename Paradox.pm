@@ -85,13 +85,14 @@ use warnings;
 #open read M record from MB
 sub read_MEMO_from_MB {
     my ($f_table, $memo) = @_;
+	#print "$f_table \n";
 	my ($mb, $memo_field);
     #determinating offset of Blob Block
     my $mb_offset = unpack( 'L', substr( $memo, -10, 4 ) ) & 0xFFFFFF00;
-	#print "$mb_offset \n";
 	my @files_mb = glob("*.[Mm][Bb]");
     foreach my $f_memo (@files_mb) {
-        if ( substr( $f_table, 0, -3 ) eq substr( $f_memo, 0, -3 ) ) {
+		#print "$f_memo \n";
+        if ( lc(substr( $f_table, 0, -3 )) eq lc(substr( $f_memo, 0, -3 ) )) {
             $mb = $f_memo;
             last;
         }
