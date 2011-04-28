@@ -85,13 +85,11 @@ use warnings;
 #open read M record from MB
 sub read_MEMO_from_MB {
     my ($f_table, $memo) = @_;
-	#print "$f_table \n";
 	my ($mb, $memo_field);
     #determinating offset of Blob Block
     my $mb_offset = unpack( 'L', substr( $memo, -10, 4 ) ) & 0xFFFFFF00;
 	my @files_mb = glob("*.[Mm][Bb]");
     foreach my $f_memo (@files_mb) {
-		#print "$f_memo \n";
         if ( lc(substr( $f_table, 0, -3 )) eq lc(substr( $f_memo, 0, -3 ) )) {
             $mb = $f_memo;
             last;
@@ -124,7 +122,6 @@ sub read_MEMO_from_MB {
 		sysseek( MB, 2, 1) || die "Cannot seek length_of_blob in read_MEMO_from_MB: $!\n";
 		sysread( MB, my $length_of_blob, 4) || die "Cannot read length_of_blob in read_MEMO_from_MB: $!\n";;
 		$length_of_blob = unpack( 'L', $length_of_blob ) & 0xFFFFFF00;
-		#print "$length_of_blob \n";
 		sysseek( MB, 2, 1) || die "Cannot seek memo_field in read_MEMO_from_MB: $!\n";
 		sysread( MB, $memo_field, $length_of_blob) || die "Cannot read memo_field in read_MEMO_from_MB: $!\n";
 	}
@@ -801,10 +798,6 @@ sub PX_read_record {
 			
 
         }
-		
-		
-		
-		
 		
 
         else {
