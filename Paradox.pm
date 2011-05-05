@@ -581,9 +581,8 @@ sub new {
     my $class = shift;
     my $new = bless {}, $class;
     $new->{handle}    = IO::File->new();
-    $new->{file_name} = $_[0];             # name of file (for reading MB files)
-    return $new->open(@_);
-
+    $new->{file_name} = shift;# name of file (for reading MB files)
+    return $new->open($new->{file_name});
 }
 
 # open file and initialize all object variables
@@ -610,17 +609,15 @@ sub open {
 
 sub close {
     my $self = shift;
-
     die "instance method called on class" unless ref $self;
     flock( $self->{handle}, LOCK_UN );
-    close( $self->{handle} );
+    close( $self->{handle});
 }
 
 # unlock and close file
 
 sub DESTROY {
     my $self = shift;
-
     $self->close();
 }
 
