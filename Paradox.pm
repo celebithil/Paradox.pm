@@ -82,12 +82,12 @@ use IO::File;
 use strict;
 use warnings;
 
-#open read M record from MB
+#open M record from MB
 sub read_MEMO_from_MB {
-    my ( $f_table, $memo ) = @_;
-    my ( $mb, $memo_field );
+    my ( $f_table, $memo ) = @_;    #name of table, memo data
+    my ( $mb, $memo_field );        #name of file, memo data from *.MB
 
-    #determinating offset of Blob Block
+    #determining offset of Blob Block
     my $mb_offset = unpack( 'L', substr( $memo, -10, 4 ) ) & 0xFFFFFF00;
     my @files_mb = glob("*.[Mm][Bb]");
     foreach my $f_memo (@files_mb) {
@@ -105,9 +105,8 @@ sub read_MEMO_from_MB {
       || die "Cannot read record_type in read_MEMO_from_MB: $!\n";
     $record_type = unpack( 'C', $record_type );
 
-    if ( $record_type == 3 ) {
-
-        #determinating index of Blob record
+    if ( $record_type == 3 ) {    # suballocated block
+                                  #determining index of Blob record
         my $mb_index = unpack( 'C', substr( $memo, -10, 1 ) );
         my $entry_offset = 12 + $mb_offset + ( 5 * $mb_index );
         sysseek( MB, $entry_offset, 0 )
@@ -127,7 +126,7 @@ sub read_MEMO_from_MB {
           || die "Cannot read memo_field in read_MEMO_from_MB: $!\n";
     }
 
-    elsif ( $record_type == 2 ) {
+    elsif ( $record_type == 2 ) {    # single block
         sysseek( MB, 2, 1 )
           || die "Cannot seek length_of_blob in read_MEMO_from_MB: $!\n";
         sysread( MB, my $length_of_blob, 4 )
