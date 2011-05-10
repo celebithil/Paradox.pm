@@ -106,8 +106,10 @@ sub read_MEMO_from_MB {
     $record_type = unpack( 'C', $record_type );
 
     if ( $record_type == 3 ) {    # suballocated block
-                                  #determining index of Blob record
-        my $mb_index = unpack( 'C', substr( $memo, -10, 1 ) );
+
+        my $mb_index =
+          unpack( 'C', substr( $memo, -10, 1 ) )
+          ;                       #determining index of Blob record
         my $entry_offset = 12 + $mb_offset + ( 5 * $mb_index );
         sysseek( MB, $entry_offset, 0 )
           || die "Cannot seek memo_entry in read_MEMO_from_MB: $!\n";
