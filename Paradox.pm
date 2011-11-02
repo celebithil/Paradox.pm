@@ -61,7 +61,7 @@ package Paradox;
 # all_fields    - number of fields
 # sort_order    - sort order
 # version   - Paradox version
-# code_page   - DOS codepage
+# code_page   - codepage
 # @field_type   - array of field types
 # @field_length   - array of field lengths
 # @field_name   - array of field names
@@ -499,7 +499,7 @@ sub PX_read_header {
 
         # 6A word
         $self->read_next_header_data(2);
-        $self->{code_page} = unpack( 'v', $self->{dummy} );
+        $self->{code_page} = 'cp' . unpack( 'v', $self->{dummy} );
         $self->read_next_header_data(12);
     }
     else {
