@@ -506,10 +506,10 @@ sub PX_read_header {
 
         # Paradox 3 has not such header
         if ( 0xc0 == $self->{sort_order} ) {
-            $self->{code_page} = 866;
+            $self->{code_page} = 'cp866';
         }
         elsif ( 0x4c == $self->{sort_order} ) {
-            $self->{code_page} = 1251;
+            $self->{code_page} = 'cp1251';
         }
     }
 
