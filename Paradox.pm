@@ -171,7 +171,7 @@ sub paradox_short_to_scalar {
     }
     ($short) = unpack( 'n', $num );
     if ( $short == 0 ) {
-        return "";
+        return undef;
     }
     elsif ( ( $short & 0x8000 ) > 0 ) {
         return $short & 0x7fff;
@@ -192,7 +192,7 @@ sub paradox_long_to_scalar {
     }
     ($long) = unpack( 'N', $num );
     if ( $long == 0 ) {
-        return "";
+        return undef;
     }
     elsif ( ( $long & 0x80000000 ) > 0 ) {
         return $long & 0x7fffffff;
@@ -213,7 +213,7 @@ sub paradox_logic_to_scalar {
     }
     ($logical) = unpack( 'C', $num );
     if ( 0 == $logical ) {
-        return "";
+        return undef;
     }
     elsif ( 0x81 == $logical ) {
         return "true";
@@ -221,7 +221,7 @@ sub paradox_logic_to_scalar {
     elsif ( 0x80 == $logical ) {
         return "false";
     }
-    return "INVAL-BOOL";
+    return undef;
 }
 
 # convert Paradox definition of time into "normal human"
@@ -235,10 +235,10 @@ sub paradox_time_to_scalar {
     }
     $long = &paradox_long_to_scalar($num);
     if ( "" eq $long ) {
-        return "";
+        return undef;
     }
     if ( $long < 0 ) {
-        return "INVAL-TIME";
+        return undef;
     }
     return &msec_to_time($long);
 }
@@ -287,7 +287,7 @@ sub paradox_number_to_scalar {
             && $num_array[6] == 0
             && $num_array[7] == 0 )
         {
-            return "";
+            return undef;
         }
 
         # high bit in first byte is set
@@ -321,11 +321,8 @@ sub paradox_date_to_scalar {
     if ( ( $long & 0x80000000 ) > 0 ) {
         return &days_to_date( $long & 0x7fffffff );
     }
-    elsif ( $long == 0 ) {
-        return "";
-    }
     else {
-        return "INVAL-DATE";
+        return undef;
     }
 }
 
@@ -345,10 +342,10 @@ sub paradox_timestamp_to_scalar {
     }
     $date = &paradox_number_to_scalar($num);
     if ( "" eq $date ) {
-        return "";
+        return undef;
     }
     if ( $date < 0 ) {
-        return "INVAL-TIMESTAMP";
+        return undef;
     }
     $a = Math::BigInt->new($date);
     $b = Math::BigInt->new("86400000");
